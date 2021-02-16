@@ -5,8 +5,6 @@ except ImportError as e:
     print("Couldn't find cupy, using numpy instead.")
     import numpy as np
 
-from . import generation
-
 def transfer_coefficient(x: np.ndarray, y: np.ndarray,
                          wavelength: float) -> np.ndarray:
     """Given the x and y grids and the wavelength, produce the frequencies in the z direction
