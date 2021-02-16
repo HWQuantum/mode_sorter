@@ -50,10 +50,9 @@ def transfer_matrix(x: np.ndarray, y: np.ndarray, wavelength: float,
         np.ndarray: The transfer matrix
     """
     T = np.exp(-1j * transfer_coefficient(x, y, wavelength) * distance)
-
-    R = np.sqrt(x**2 + y**2)
-
-    T[R > (max_k * np.max(R))] = 0
+    if max_k is not None:
+        R = np.sqrt(x**2 + y**2)
+        T[R > (max_k * np.max(R))] = 0
     return np.asarray(np.fft.fftshift(T))
 
 
