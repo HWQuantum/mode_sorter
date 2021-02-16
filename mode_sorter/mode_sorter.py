@@ -5,6 +5,8 @@ except ImportError as e:
     print("Couldn't find cupy, using numpy instead.")
     import numpy as np
 
+from . import generation
+
 def transfer_coefficient(x: np.ndarray, y: np.ndarray,
                          wavelength: float) -> np.ndarray:
     """Given the x and y grids and the wavelength, produce the frequencies in the z direction
@@ -23,11 +25,11 @@ def transfer_coefficient(x: np.ndarray, y: np.ndarray,
     nx, ny = x.shape
 
     f_x, f_y = nx / (max_x - min_x), ny / (max_y - min_y)
-    vx = cp.linspace(-nx / 2, nx / 2 - 1, int(nx)) / nx * f_x
-    vy = cp.linspace(-ny / 2, ny / 2 - 1, int(ny)) / ny * f_y
-    vx, vy = cp.meshgrid(vx, vy)
+    vx = np.linspace(-nx / 2, nx / 2 - 1, int(nx)) / nx * f_x
+    vy = np.linspace(-ny / 2, ny / 2 - 1, int(ny)) / ny * f_y
+    vx, vy = np.meshgrid(vx, vy)
 
-    return (2 * np.pi * cp.sqrt(1 / wavelength**2 - vx**2 - vy**2)
+    return (2 * np.pi * np.sqrt(1 / wavelength**2 - vx**2 - vy**2)
             ).T  # do the transpose to have the same shape as the input x and y
 
 def update_mask(mask: np.ndarray,
@@ -51,12 +53,12 @@ def update_mask(mask: np.ndarray,
         None
     """
     d_mask = forward_field * backward_field.conj()
-    norm = (cp.sqrt((cp.abs(forward_field)**2).sum(axis=(-1, -2)) *
-                    (cp.abs(backward_field)**2).sum(axis=(-1, -2))))
+    norm = (np.sqrt((np.abs(forward_field)**2).sum(axis=(-1, -2)) *
+                    (np.abs(backward_field)**2).sum(axis=(-1, -2))))
     d_mask[np.where(norm != 0)] /= norm[np.where(norm != 0)].reshape(
         (-1, 1, 1))
-    new_m = (d_mask * cp.exp(-1j * cp.angle(
-        (d_mask * cp.exp(-1j * cp.angle(mask))).sum(axis=(-1, -2))).reshape(
+    new_m = (d_mask * np.exp(-1j * np.angle(
+        (d_mask * np.exp(-1j * np.angle(mask))).sum(axis=(-1, -2))).reshape(
             (-1, 1, 1)))).sum(axis=0)
     if symmetric_mask:
         mask[:] = (new_m + new_m[::-1, :]) / 2 + mask_offset
@@ -97,8 +99,8 @@ def propagate_field(forward_field: np.ndarray,
                         backward_field[i],
                         mask_offset,
                         symmetric_mask=symmetric_mask)
-        forward_field[i + 1] = cp.fft.ifftn(forward_transfer * cp.fft.fftn(
-            forward_field[i] * cp.exp(-1j * cp.angle(masks[i])), axes=(1, 2)),
+        forward_field[i + 1] = np.fft.ifftn(forward_transfer * np.fft.fftn(
+            forward_field[i] * np.exp(-1j * np.angle(masks[i])), axes=(1, 2)),
             axes=(1, 2))
 
     # now iterate backwards
@@ -109,6 +111,6 @@ def propagate_field(forward_field: np.ndarray,
                         backward_field[i],
                         mask_offset,
                         symmetric_mask=symmetric_mask)
-        backward_field[i - 1] = cp.fft.ifftn(backward_transfer * cp.fft.fftn(
-            backward_field[i] * cp.exp(1j * cp.angle(masks[i])), axes=(1, 2)),
+        backward_field[i - 1] = np.fft.ifftn(backward_transfer * np.fft.fftn(
+            backward_field[i] * np.exp(1j * np.angle(masks[i])), axes=(1, 2)),
             axes=(1, 2))
