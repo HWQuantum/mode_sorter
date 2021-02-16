@@ -5,9 +5,11 @@ except ImportError as e:
     print("Couldn't find cupy, using numpy instead.")
     import numpy as np
 
+
 def transfer_coefficient(x: np.ndarray, y: np.ndarray,
                          wavelength: float) -> np.ndarray:
-    """Given the x and y grids and the wavelength, produce the frequencies in the z direction
+    """Given the x and y grids and the wavelength, produce the frequencies in
+        the z direction
 
     Args:
         x: The x positions grid
@@ -30,11 +32,36 @@ def transfer_coefficient(x: np.ndarray, y: np.ndarray,
     return (2 * np.pi * np.sqrt(1 / wavelength**2 - vx**2 - vy**2)
             ).T  # do the transpose to have the same shape as the input x and y
 
+
+def transfer_matrix(x: np.ndarray, y: np.ndarray, wavelength: float,
+                    distance: float, max_k=None) -> np.ndarray:
+    """Generate the transfer matrix for the given ``distance``
+
+    Args:
+        x: The x positions grid
+        y: The y positions grid
+        wavelength: The wavelength of the light
+        plane_spacing: The distance that this matrix should move the input mode
+        max_k (float): If defined, this is the maximum k that the
+            transfer matrix should support.
+            Coefficients at larger k are cut off
+
+    Returns:
+        np.ndarray: The transfer matrix
+    """
+    T = np.exp(-1j * transfer_coefficient(x, y, wavelength) * distance)
+
+    R = np.sqrt(x**2 + y**2)
+
+    T[R > (max_k * np.max(R))] = 0
+    return np.asarray(np.fft.fftshift(T))
+
+
 def update_mask(mask: np.ndarray,
                 forward_field: np.ndarray,
                 backward_field: np.ndarray,
-                mask_offset: float=0,
-                symmetric_mask: bool=False):
+                mask_offset: float = 0,
+                symmetric_mask: bool = False):
     """Update the given mask (at a single plane) with the forward and backward field at that plane
     and optionally add an offset
 
@@ -62,6 +89,7 @@ def update_mask(mask: np.ndarray,
         mask[:] = (new_m + new_m[::-1, :]) / 2 + mask_offset
     else:
         mask[:] = new_m + mask_offset
+
 
 def propagate_field(forward_field: np.ndarray,
                     backward_field: np.ndarray,
