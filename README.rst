@@ -26,7 +26,8 @@ A package for generating mode sorting patterns with SLMs
 Features
 --------
 
-* TODO
+* Unitary transformations with a single SLM!
+* Calculations on GPU or CPU!
 
 Credits
 -------
