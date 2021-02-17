@@ -16,7 +16,10 @@ Mode Sorter
 
 
 
-A package for generating mode sorting patterns with SLMs
+A package for generating mode sorting patterns with SLMs.
+It does this:
+
+.. image:: ./figures/transformed_states.png
 
 
 * Free software: MIT license
