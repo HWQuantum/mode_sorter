@@ -4,7 +4,7 @@ try:
 except ImportError as e:
     print("Couldn't find cupy, using numpy instead.")
     import numpy as np
-from typing import Optional
+from typing import Optional, Union, List, Tuple
 
 
 def transfer_coefficient(x: np.ndarray, y: np.ndarray,
@@ -34,27 +34,37 @@ def transfer_coefficient(x: np.ndarray, y: np.ndarray,
             ).T  # do the transpose to have the same shape as the input x and y
 
 
-def transfer_matrix(x: np.ndarray, y: np.ndarray, wavelength: float,
+def transfer_matrix(x: np.ndarray, y: np.ndarray, wavelength: Union[float, List[float]],
                     distance: float, max_k=None) -> np.ndarray:
     """Generate the transfer matrix for the given ``distance``
 
     Args:
         x: The x positions grid
         y: The y positions grid
-        wavelength: The wavelength of the light
+        wavelength: The wavelength of the light, or a list of wavelengths of light
         plane_spacing: The distance that this matrix should move the input mode
         max_k (float): If defined, this is the maximum k that the
             transfer matrix should support.
             Coefficients at larger k are cut off
 
     Returns:
-        np.ndarray: The transfer matrix
+        np.ndarray: The transfer matrix or matrices, depending on
+            ``wavelength`` being a float or a list of floats
     """
-    T = np.exp(-1j * transfer_coefficient(x, y, wavelength) * distance)
+    if type(wavelength) is list:
+        T = np.empty((len(wavelength), *x.shape), dtype=np.complex128)
+        for i, w in enumerate(wavelength):
+            T[i] = np.exp(-1j * transfer_coefficient(x, y, w) * distance)
+    else:
+        T = np.exp(-1j * transfer_coefficient(x, y, wavelength) * distance)
+
     if max_k is not None:
         R = np.sqrt(x**2 + y**2)
-        T[R > (max_k * np.max(R))] = 0
-    return np.asarray(np.fft.fftshift(T))
+        if type(wavelength) is list:
+            T[:, R > (max_k * np.max(R))] = 0
+        else:
+            T[R > (max_k * np.max(R))] = 0
+    return np.asarray(np.fft.fftshift(T, axes=(-1, -2)))
 
 
 def update_mask(mask: np.ndarray,
@@ -95,7 +105,7 @@ def propagate_field(forward_field: np.ndarray,
                     backward_field: np.ndarray,
                     masks: np.ndarray,
                     forward_transfer: np.ndarray,
-                    transfer_indices: Optional[list[tuple(int, int)]] = None,
+                    transfer_indices: Optional[List[Tuple[int, int]]] = None,
                     should_update_mask: bool = False,
                     mask_offset: float = 0,
                     symmetric_mask: bool = False):
