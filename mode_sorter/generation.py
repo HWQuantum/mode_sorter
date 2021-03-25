@@ -129,7 +129,7 @@ def generate_circular_spots(mode_count,
     field = np.zeros((mode_count, *X.shape), dtype=np.complex128)
     for i, pos in enumerate(zip(spot_x, spot_y)):
         field[i, :, :] = generate_spot(pos, spot_diameter, wavelength,
-                                       distance_to_plane, X, Y)
+                                       distance_to_plane, X - centre[0], Y - centre[1])
     return field
 
 
