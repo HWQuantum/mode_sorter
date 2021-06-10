@@ -34,8 +34,11 @@ def transfer_coefficient(x: np.ndarray, y: np.ndarray,
             ).T  # do the transpose to have the same shape as the input x and y
 
 
-def transfer_matrix(x: np.ndarray, y: np.ndarray, wavelength: Union[float, List[float]],
-                    distance: float, max_k=None) -> np.ndarray:
+def transfer_matrix(x: np.ndarray,
+                    y: np.ndarray,
+                    wavelength: Union[float, List[float]],
+                    distance: float,
+                    max_k: Union[float, None] = None) -> np.ndarray:
     """Generate the transfer matrix for the given ``distance``
 
     Args:
@@ -51,7 +54,7 @@ def transfer_matrix(x: np.ndarray, y: np.ndarray, wavelength: Union[float, List[
         np.ndarray: The transfer matrix or matrices, depending on
             ``wavelength`` being a float or a list of floats
     """
-    if type(wavelength) is list:
+    if isinstance(wavelength, list):
         T = np.empty((len(wavelength), *x.shape), dtype=np.complex128)
         for i, w in enumerate(wavelength):
             T[i] = np.exp(-1j * transfer_coefficient(x, y, w) * distance)
@@ -144,12 +147,14 @@ def propagate_field(forward_field: np.ndarray,
         if transfer_indices is None:
             forward_field[i + 1] = np.fft.ifftn(forward_transfer * np.fft.fftn(
                 forward_field[i] * np.exp(-1j * np.angle(masks[i])),
-                axes=(1, 2)), axes=(1, 2))
+                axes=(1, 2)),
+                                                axes=(1, 2))
         else:
             for (mi, ma), t in zip(transfer_indices, forward_transfer):
                 forward_field[i + 1, mi:ma] = np.fft.ifftn(t * np.fft.fftn(
                     forward_field[i, mi:ma] * np.exp(-1j * np.angle(masks[i])),
-                    axes=(1, 2)), axes=(1, 2))
+                    axes=(1, 2)),
+                                                           axes=(1, 2))
 
     # now iterate backwards
     for i in range(len(masks) - 1, 0, -1):
@@ -160,11 +165,30 @@ def propagate_field(forward_field: np.ndarray,
                         mask_offset,
                         symmetric_mask=symmetric_mask)
         if transfer_indices is None:
-            backward_field[i - 1] = np.fft.ifftn(backward_transfer * np.fft.fftn(
-                backward_field[i] * np.exp(1j * np.angle(masks[i])), axes=(1, 2)),
+            backward_field[i - 1] = np.fft.ifftn(
+                backward_transfer * np.fft.fftn(
+                    backward_field[i] * np.exp(1j * np.angle(masks[i])),
+                    axes=(1, 2)),
                 axes=(1, 2))
         else:
             for (mi, ma), t in zip(transfer_indices, backward_transfer):
                 backward_field[i - 1, mi:ma] = np.fft.ifftn(t * np.fft.fftn(
-                    backward_field[i, mi:ma] * np.exp(1j * np.angle(masks[i])), axes=(1, 2)),
-                    axes=(1, 2))
+                    backward_field[i, mi:ma] * np.exp(1j * np.angle(masks[i])),
+                    axes=(1, 2)),
+                                                            axes=(1, 2))
+
+
+def threshold_masks(masks: np.ndarray, field: np.ndarray,
+                    threshold_value: float) -> np.ndarray:
+    """Take in a set of masks, and the field over the masks and return the masks thresholded by
+    the field intensity.
+
+    Args:
+    masks: The masks to threshold
+    field: The field over all of these masks
+    threshold_value: The minimum average field value to threshold the masks with
+
+    Returns:
+    the modified masks
+    """
+    pass
