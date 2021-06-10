@@ -4,7 +4,7 @@ try:
 except ImportError as e:
     print("Couldn't find cupy, using numpy instead.")
     import numpy as np
-from typing import Optional, Union, List, Tuple
+from typing import Literal, Optional, Union, List, Tuple
 
 
 def transfer_coefficient(x: np.ndarray, y: np.ndarray,
@@ -178,17 +178,33 @@ def propagate_field(forward_field: np.ndarray,
                                                             axes=(1, 2))
 
 
-def threshold_masks(masks: np.ndarray, field: np.ndarray,
-                    threshold_value: float) -> np.ndarray:
+def threshold_masks(
+        masks: np.ndarray,
+        field: np.ndarray,
+        threshold_value: float,
+        threshold_type: Literal["maximum",
+                                "average"] = "maximum") -> np.ndarray:
     """Take in a set of masks, and the field over the masks and return the masks thresholded by
     the field intensity.
 
     Args:
     masks: The masks to threshold
     field: The field over all of these masks
-    threshold_value: The minimum average field value to threshold the masks with
+    threshold_value: The fraction of maximum intensity at a given mask that we should threshold at.
 
     Returns:
     the modified masks
     """
-    pass
+    intensity = np.abs(field)**2
+    new_masks = masks.copy()
+    if threshold_type == "maximum":
+        field_threshold: np.ndarray = np.average(intensity, axis=1)
+    elif threshold_type == "average":
+        field_threshold: np.ndarray = np.max(intensity, axis=1)
+    else:
+        raise ValueError(
+            "threshold_type should be one of [\"maximum\", \"average\"]")
+    new_masks[np.where(
+        field_threshold < (np.max(field_threshold, axis=(1, 2)) *
+                           threshold_value)[:, np.newaxis, np.newaxis])] = 1
+    return new_masks
