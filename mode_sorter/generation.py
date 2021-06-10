@@ -3,6 +3,7 @@
 import numpy as np
 from numpy import pi, sqrt, arctan, exp
 from scipy.special import assoc_laguerre, eval_hermite
+from typing import Tuple, List
 
 
 def state_representation(states: np.ndarray, basis: np.ndarray) -> np.ndarray:
@@ -25,7 +26,9 @@ def state_representation(states: np.ndarray, basis: np.ndarray) -> np.ndarray:
         (1, *basis.shape))).sum(axis=1)
 
 
-def generate_spot(centre, diameter, wavelength, distance_to_plane, X, Y):
+def generate_spot(centre: Tuple[float, float], diameter: float,
+                  wavelength: float, distance_to_plane: float, X: np.ndarray,
+                  Y: np.ndarray) -> np.ndarray:
     """Generate a spot at a certain position
     use the equation from wikipedia:
     https://en.wikipedia.org/wiki/Gaussian_beam
@@ -42,7 +45,7 @@ def generate_spot(centre, diameter, wavelength, distance_to_plane, X, Y):
     """
 
     # set up all the terms required for the equation
-    R2 = (X - centre[0])**2 + (Y - centre[1])**2
+    R2: np.ndarray = (X - centre[0])**2 + (Y - centre[1])**2
     k = 2 * pi / wavelength
     w0 = diameter / 2
     z = distance_to_plane
@@ -61,7 +64,9 @@ def generate_spot(centre, diameter, wavelength, distance_to_plane, X, Y):
     return spot
 
 
-def generate_HG(l, m, centre, diameter, wavelength, distance_to_plane, X, Y):
+def generate_HG(l: int, m: int, centre: Tuple[float, float], diameter: float,
+                wavelength: float, distance_to_plane: float, X: np.ndarray,
+                Y: np.ndarray) -> np.ndarray:
     """Generate a normalised HG mode
     """
     R2 = (X - centre[0])**2 + (Y - centre[1])**2
@@ -78,16 +83,18 @@ def generate_HG(l, m, centre, diameter, wavelength, distance_to_plane, X, Y):
     hg_mode = (w0 / wz * eval_hermite(l,
                                       sqrt(2) * (X - centre[0]) / wz) *
                eval_hermite(m,
-                            sqrt(2) * (Y - centre[1]) / wz) * exp(-R2 / wz**2)
-               * exp(-1j * k * R2 * Rz_inv / 2)
-               * exp(1j * psi) * exp(-1j * k * z))
+                            sqrt(2) * (Y - centre[1]) / wz) *
+               exp(-R2 / wz**2) * exp(-1j * k * R2 * Rz_inv / 2) *
+               exp(1j * psi) * exp(-1j * k * z))
     norm = sqrt((np.abs(hg_mode)**2).sum())
     if norm != 0:
         hg_mode /= norm
     return hg_mode
 
 
-def generate_LG(p, l, centre, diameter, wavelength, distance_to_plane, X, Y):
+def generate_LG(p: int, l: int, centre: Tuple[float, float], diameter: float,
+                wavelength: float, distance_to_plane: float, X: np.ndarray,
+                Y: np.ndarray) -> np.ndarray:
     """Generate a normalised LG mode
     """
     l_abs = np.abs(l)
@@ -113,14 +120,15 @@ def generate_LG(p, l, centre, diameter, wavelength, distance_to_plane, X, Y):
     return lg_mode
 
 
-def generate_circular_spots(mode_count,
-                            radius,
-                            wavelength,
-                            distance_to_plane,
-                            spot_diameter,
-                            X,
-                            Y,
-                            centre=(0, 0)):
+def generate_circular_spots(
+    mode_count: int,
+    radius: float,
+    wavelength: float,
+    distance_to_plane: float,
+    spot_diameter: float,
+    X: np.ndarray,
+    Y: np.ndarray,
+    centre: Tuple[float, float] = (0, 0)) -> np.ndarray:
     """Generate a set of spots in a circle with a given radius
     """
     p = np.exp(2 * np.pi * 1j * np.linspace(0, 1, mode_count + 1)[:-1])
@@ -129,19 +137,20 @@ def generate_circular_spots(mode_count,
     field = np.zeros((mode_count, *X.shape), dtype=np.complex128)
     for i, pos in enumerate(zip(spot_x, spot_y)):
         field[i, :, :] = generate_spot(pos, spot_diameter, wavelength,
-                                       distance_to_plane, X - centre[0], Y - centre[1])
+                                       distance_to_plane, X - centre[0],
+                                       Y - centre[1])
     return field
 
 
-def generate_triangular_spots(rows,
-                              mode_diameter,
-                              distance_to_tip,
-                              centre,
-                              wavelength,
-                              distance_to_plane,
-                              X,
-                              Y,
-                              rotation=0):
+def generate_triangular_spots(rows: int,
+                              mode_diameter: float,
+                              distance_to_tip: float,
+                              centre: Tuple[float, float],
+                              wavelength: float,
+                              distance_to_plane: float,
+                              X: np.ndarray,
+                              Y: np.ndarray,
+                              rotation: float = 0) -> np.ndarray:
     """Generate a set of spots in a triangle (for use with HG modes)
     give it the number of rows and it'll return a set of modes of row(row+1)/2 dimensions
 
