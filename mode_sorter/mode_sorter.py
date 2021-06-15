@@ -52,8 +52,7 @@ def transfer_matrix(x: np.ndarray,
             Coefficients at larger k are cut off
 
     Returns:
-        np.ndarray: The transfer matrix or matrices, depending on
-            ``wavelength`` being a float or a sequence of floats
+        np.ndarray: The transfer matrix with dimensions (n_distances, n_wavelengths, *x.shape)
     """
     dist_array = np.array([distance]) if isinstance(
         distance, float) else np.array(distance)
