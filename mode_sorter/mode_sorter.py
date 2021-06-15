@@ -55,13 +55,18 @@ def transfer_matrix(x: np.ndarray,
         np.ndarray: The transfer matrix or matrices, depending on
             ``wavelength`` being a float or a sequence of floats
     """
-    dist_array = np.array([distance]) if isinstance(distance, float) else np.array(distance)
+    dist_array = np.array([distance]) if isinstance(
+        distance, float) else np.array(distance)
     if isinstance(wavelength, Sequence):
-        T = np.empty((len(dist_array), len(wavelength), *x.shape), dtype=np.complex128)
+        T = np.empty((len(dist_array), len(wavelength), *x.shape),
+                     dtype=np.complex128)
         for i, w in enumerate(wavelength):
-            T[:, i] = np.exp(-1j * transfer_coefficient(x, y, w)[np.newaxis, :, :] * dist_array[:, np.newaxis, np.newaxis])
+            T[:, i] = np.exp(-1j *
+                             transfer_coefficient(x, y, w)[np.newaxis, :, :] *
+                             dist_array[:, np.newaxis, np.newaxis])
     else:
-        T = np.exp(-1j * transfer_coefficient(x, y, np.array([wavelength]))[np.newaxis, :, :] *
+        T = np.exp(-1j * transfer_coefficient(x, y, np.array(
+            [wavelength]))[np.newaxis, :, :] *
                    dist_array[:, np.newaxis, np.newaxis])[:, np.newaxis, ...]
 
     if max_k is not None:
@@ -121,7 +126,7 @@ def propagate_field(forward_field: np.ndarray,
         backward_field: The backward moving field. Should have dimensions ``(N_planes, N_modes, X, Y)``
         masks: The set of masks. Should have dimensions ``(N_planes, X, Y)``
         forward_transfer: An array giving the free propagation of a mode through the space between mask planes.
-            Should have dimensions ``(X, Y)`` or ``(N, X, Y)`` if using transfer indices.
+    It'll have indices
         transfer_indices: This allows having different transfer matrices for different modes.
             The transfer matrices are zipped with this list along the first axis, and the tuples
             determine which modes of the field they apply to (taken as a slice).
@@ -134,10 +139,14 @@ def propagate_field(forward_field: np.ndarray,
     Returns:
         None
     """
+    assert (forward_transfer.shape[0] == 1) or (
+        forward_transfer.shape[0] == masks.shape[0] -
+        1), "Number of transfer matrices should be 1 less than number of masks"
     backward_transfer = forward_transfer.conj()
 
     # iterate forwards
     for i in range(len(masks) - 1):
+        transfer_mask_index = 0 if forward_transfer.shape[0] == 1 else i
         if should_update_mask:
             update_mask(masks[i],
                         forward_field[i],
@@ -145,12 +154,14 @@ def propagate_field(forward_field: np.ndarray,
                         mask_offset,
                         symmetric_mask=symmetric_mask)
         if transfer_indices is None:
-            forward_field[i + 1] = np.fft.ifftn(forward_transfer * np.fft.fftn(
-                forward_field[i] * np.exp(-1j * np.angle(masks[i])),
-                axes=(1, 2)),
-                                                axes=(1, 2))
+            forward_field[i + 1] = np.fft.ifftn(
+                forward_transfer[transfer_mask_index, 0] * np.fft.fftn(
+                    forward_field[i] * np.exp(-1j * np.angle(masks[i])),
+                    axes=(1, 2)),
+                axes=(1, 2))
         else:
-            for (mi, ma), t in zip(transfer_indices, forward_transfer):
+            for (mi, ma), t in zip(transfer_indices,
+                                   forward_transfer[transfer_mask_index]):
                 forward_field[i + 1, mi:ma] = np.fft.ifftn(t * np.fft.fftn(
                     forward_field[i, mi:ma] * np.exp(-1j * np.angle(masks[i])),
                     axes=(1, 2)),
@@ -158,6 +169,7 @@ def propagate_field(forward_field: np.ndarray,
 
     # now iterate backwards
     for i in range(len(masks) - 1, 0, -1):
+        transfer_mask_index = 0 if backward_transfer.shape[0] == 1 else (i - 1)
         if should_update_mask:
             update_mask(masks[i],
                         forward_field[i],
@@ -166,12 +178,13 @@ def propagate_field(forward_field: np.ndarray,
                         symmetric_mask=symmetric_mask)
         if transfer_indices is None:
             backward_field[i - 1] = np.fft.ifftn(
-                backward_transfer * np.fft.fftn(
+                backward_transfer[transfer_mask_index, 0] * np.fft.fftn(
                     backward_field[i] * np.exp(1j * np.angle(masks[i])),
                     axes=(1, 2)),
                 axes=(1, 2))
         else:
-            for (mi, ma), t in zip(transfer_indices, backward_transfer):
+            for (mi, ma), t in zip(transfer_indices,
+                                   backward_transfer[transfer_mask_index]):
                 backward_field[i - 1, mi:ma] = np.fft.ifftn(t * np.fft.fftn(
                     backward_field[i, mi:ma] * np.exp(1j * np.angle(masks[i])),
                     axes=(1, 2)),
