@@ -4,7 +4,7 @@ try:
 except ImportError as e:
     print("Couldn't find cupy, using numpy instead.")
     import numpy as np
-from typing import Literal, Optional, Union, List, Tuple
+from typing import Literal, Optional, Sequence, Union, List, Tuple
 
 
 def transfer_coefficient(x: np.ndarray, y: np.ndarray,
@@ -36,8 +36,8 @@ def transfer_coefficient(x: np.ndarray, y: np.ndarray,
 
 def transfer_matrix(x: np.ndarray,
                     y: np.ndarray,
-                    wavelength: Union[float, List[float]],
-                    distance: float,
+                    wavelength: Union[float, Sequence[float]],
+                    distance: Union[float, Sequence[float]],
                     max_k: Union[float, None] = None) -> np.ndarray:
     """Generate the transfer matrix for the given ``distance``
 
@@ -45,28 +45,28 @@ def transfer_matrix(x: np.ndarray,
         x: The x positions grid
         y: The y positions grid
         wavelength: The wavelength of the light, or a list of wavelengths of light
-        plane_spacing: The distance that this matrix should move the input mode
+        distance: The distance that this matrix should move the input mode. This can be a single float, or 
+    a sequence of floats, in which case this generates a different transfer matrix for each plane
         max_k (float): If defined, this is the maximum k that the
             transfer matrix should support.
             Coefficients at larger k are cut off
 
     Returns:
         np.ndarray: The transfer matrix or matrices, depending on
-            ``wavelength`` being a float or a list of floats
+            ``wavelength`` being a float or a sequence of floats
     """
-    if isinstance(wavelength, list):
-        T = np.empty((len(wavelength), *x.shape), dtype=np.complex128)
+    dist_array = np.array([distance]) if isinstance(distance, float) else np.array(distance)
+    if isinstance(wavelength, Sequence):
+        T = np.empty((len(dist_array), len(wavelength), *x.shape), dtype=np.complex128)
         for i, w in enumerate(wavelength):
-            T[i] = np.exp(-1j * transfer_coefficient(x, y, w) * distance)
+            T[:, i] = np.exp(-1j * transfer_coefficient(x, y, w)[np.newaxis, :, :] * dist_array[:, np.newaxis, np.newaxis])
     else:
-        T = np.exp(-1j * transfer_coefficient(x, y, wavelength) * distance)
+        T = np.exp(-1j * transfer_coefficient(x, y, np.array([wavelength]))[np.newaxis, :, :] *
+                   dist_array[:, np.newaxis, np.newaxis])[:, np.newaxis, ...]
 
     if max_k is not None:
         R = np.sqrt(x**2 + y**2)
-        if type(wavelength) is list:
-            T[:, R > (max_k * np.max(R))] = 0
-        else:
-            T[R > (max_k * np.max(R))] = 0
+        T[..., R > (max_k * np.max(R))] = 0
     return np.asarray(np.fft.fftshift(T, axes=(-1, -2)))
 
 
