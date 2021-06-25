@@ -11,13 +11,9 @@ with open('HISTORY.rst') as history_file:
 
 requirements = ['numpy>=1.19', 'scipy>=1.5']
 
-setup_requirements = [
-    'pytest-runner',
-]
+setup_requirements = ['pytest-runner']
 
-test_requirements = [
-    'pytest>=3',
-] + requirements
+test_requirements = ['pytest>=3']
 
 setup(
     author="Max Tyler",
@@ -29,10 +25,8 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
     description="A package for generating mode sorting patterns with SLMs",
     install_requires=requirements,
