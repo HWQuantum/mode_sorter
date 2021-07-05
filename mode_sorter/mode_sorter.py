@@ -4,7 +4,7 @@ try:
 except ImportError as e:
     print("Couldn't find cupy, using numpy instead.")
     import numpy as np
-from typing import Literal, Optional, Sequence, Union, List, Tuple
+from typing import Optional, Sequence, Union, List, Tuple
 
 
 def transfer_coefficient(x: np.ndarray, y: np.ndarray,
@@ -190,12 +190,10 @@ def propagate_field(forward_field: np.ndarray,
                                                             axes=(1, 2))
 
 
-def threshold_masks(
-        masks: np.ndarray,
-        field: np.ndarray,
-        threshold_value: float,
-        threshold_type: Literal["maximum",
-                                "average"] = "maximum") -> np.ndarray:
+def threshold_masks(masks: np.ndarray,
+                    field: np.ndarray,
+                    threshold_value: float,
+                    threshold_type="maximum") -> np.ndarray:
     """Take in a set of masks, and the field over the masks and return the masks thresholded by
     the field intensity.
 
