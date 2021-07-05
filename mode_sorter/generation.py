@@ -142,6 +142,26 @@ def generate_circular_spots(
     return field
 
 
+def generate_circular_spots_with_central_spot(
+    mode_count: int,
+    radius: float,
+    wavelength: float,
+    distance_to_plane: float,
+    spot_diameter: float,
+    X: np.ndarray,
+    Y: np.ndarray,
+    centre: Tuple[float, float] = (0, 0)) -> np.ndarray:
+    """Generate a set of spots in a circle around a central spot.
+    """
+    outside_spots = generate_circular_spots(mode_count - 1, radius, wavelength,
+                                            distance_to_plane, spot_diameter,
+                                            X, Y, centre)
+    central_spot = generate_spot(centre, spot_diameter, wavelength,
+                                 distance_to_plane, X, Y)
+    return np.concatenate((outside_spots, central_spot[np.newaxis, ...]),
+                          axis=0)
+
+
 def generate_triangular_spots(rows: int,
                               mode_diameter: float,
                               distance_to_tip: float,
