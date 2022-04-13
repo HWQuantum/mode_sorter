@@ -13,16 +13,9 @@
 
       in
       {
-        defaultPackage = pkgs.python3Packages.buildPythonPackage rec {
-          name = "mode_sorter";
-          version = "0.1.0";
-          src = ./.;
-          propagatedBuildInputs = with pkgs.python3Packages; [
-            numpy
-            scipy
-          ];
-
-          nativeBuildInputs = with pkgs.python3Packages; [ pytest ];
+        defaultPackage = pkgs.poetry2nix.mkPoetryApplication {
+          projectDir = ./.;
+          preferWheels = true;
         };
       });
 }
